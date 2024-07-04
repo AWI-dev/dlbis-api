@@ -58,6 +58,7 @@ class InventoryDetailsController extends Controller
     {
         $fields = $request->validate([
             'created_by_id' => 'required',
+            'inventory_title_id' => 'required|exists:inventory_titles,id',
             'bulk_data' => 'required'
         ]);
         return $this->bulkUpload(InventoryDetailsModel::class, 'Inventory Details', $fields);

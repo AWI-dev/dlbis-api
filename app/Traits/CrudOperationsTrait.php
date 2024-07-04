@@ -247,10 +247,11 @@ trait CrudOperationsTrait
             DB::beginTransaction();
             $bulkUploadData = json_decode($request['bulk_data'], true);
             $createdById = $request['created_by_id'];
-
+            $inventoryTitleId = $request['inventory_title_id'];
             foreach ($bulkUploadData as $data) {
                 $record = new $model();
                 $record->fill($data);
+                $record->inventory_title_id = $inventoryTitleId;
                 $record->created_by_id = $createdById;
                 $record->save();
             }

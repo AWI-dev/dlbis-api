@@ -31,5 +31,6 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('v1/inventory/details/update/{id}', [App\Http\Controllers\Inventory\InventoryDetailsController::class, 'onUpdate']);
     Route::delete('v1/inventory/details/delete/{id}', [App\Http\Controllers\Inventory\InventoryDetailsController::class, 'onDelete']);
     Route::get('v1/inventory/details/get/current/{employee_id}/{id}', [App\Http\Controllers\Inventory\InventoryDetailsController::class, 'onGetCurrent']);
+    Route::post('v1/inventory/details/bulk', [App\Http\Controllers\Inventory\InventoryDetailsController::class, 'onBulk']);
     #endregion
 });

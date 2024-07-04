@@ -13,7 +13,8 @@ class InventoryTitleModel extends Model
     protected $fillable = [
         'title',
         'inventory_title_date',
-        'created_by_id'
+        'created_by_id',
+        'updated_by_id',
     ];
 
     public function inventorydetails()

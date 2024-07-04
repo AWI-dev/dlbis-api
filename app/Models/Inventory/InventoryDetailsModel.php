@@ -11,6 +11,8 @@ class InventoryDetailsModel extends Model
 
     protected $table = 'inventory_details';
     protected $fillable = [
+        'updated_by_id',
+        'created_by_id',
         'inventory_title_id',
         'reference_code',
         'item_name',

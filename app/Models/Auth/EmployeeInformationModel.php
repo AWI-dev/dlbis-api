@@ -19,6 +19,8 @@ class EmployeeInformationModel extends Model
         'suffix',
         'company_email',
         'status',
+        'updated_by_id',
+        'created_by_id',
     ];
 
     protected $casts = [

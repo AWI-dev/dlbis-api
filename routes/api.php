@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('v1/login', [App\Http\Controllers\Auth\CredentialController::class, 'onLogin']);
 Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('v1/logout', [App\Http\Controllers\Auth\CredentialController::class, 'onLogout']);
+    Route::post('v1/credential/create', [App\Http\Controllers\Auth\CredentialController::class, 'onCreate']);
 
     #region Inventory Title
     Route::post('v1/inventory/title/create', [App\Http\Controllers\Inventory\InventoryTitleController::class, 'onCreate']);

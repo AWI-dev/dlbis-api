@@ -19,7 +19,7 @@ return new class extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('credential_employee_information', function (Blueprint $table) {
+        Schema::create('credential_employee_informations', function (Blueprint $table) {
             $table->id();
             $table->string('employee_id');
             $table->integer('role')->default(1); // 1 = guest, 2 = admin

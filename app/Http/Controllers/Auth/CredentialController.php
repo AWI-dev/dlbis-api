@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Auth\CredentialModel;
 use App\Models\Auth\EmployeeInformationModel;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Helpers\ResponseBuilderHelper;
 use App\Helpers\ResponseMessageHelper;
+use DB;
 
 class CredentialController extends Controller
 {
@@ -61,6 +63,36 @@ class CredentialController extends Controller
                 'errors' => $exception->getMessage()
             ];
             return ResponseBuilderHelper::dataResponse('error', 400, ResponseMessageHelper::onAuthenticate('Logout', 0), null);
+        }
+    }
+
+    public function onCreate(Request $request)
+    {
+        $fields = $request->validate([
+            'employee_id' => 'required|unique:credentials,employee_id',
+            'password' => 'required|min:6',
+            'prefix' => 'nullable|string',
+            'first_name' => 'required|string',
+            'middle_name' => 'nullable|string',
+            'last_name' => 'required|string',
+            'suffix' => 'nullable|string',
+            'role' => 'required',
+            'company_email' => 'required|email|unique:credential_employee_informations,company_email'
+        ]);
+        try {
+            DB::beginTransaction();
+            $credential = new CredentialModel();
+            $credential->fill($fields);
+            $credential->save();
+
+            $employeeInformation = new EmployeeInformationModel();
+            $employeeInformation->fill($fields);
+            $employeeInformation->save();
+            DB::commit();
+            return $this->dataResponse('success', 201, 'Credentials ' . __('msg.create_success'));
+        } catch (Exception $exception) {
+            DB::rollBack();
+            return $this->dataResponse('error', 400, $exception->getMessage());
         }
     }
 }

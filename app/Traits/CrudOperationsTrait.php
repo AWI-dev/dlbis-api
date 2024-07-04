@@ -2,29 +2,30 @@
 
 namespace App\Traits;
 
+use App\Http\Controllers\v1\History\ProductionLogController;
 use Exception;
 use App\Traits\ResponseTrait;
-use Illuminate\Database\QueryException;
-use Symfony\Component\HttpFoundation\Response;
+use DB;
+
 
 trait CrudOperationsTrait
 {
     use ResponseTrait;
-    public function createRecord($model, $request, $rules, $modelName)
+    public function createRecord($model, $request, $rules, $modelName, $path = null)
     {
         $fields = $request->validate($rules);
         try {
             $record = new $model();
             $record->fill($fields);
-            $record->save();
-            return $this->dataResponse('success', Response::HTTP_OK, __('msg.create_success'));
-        } catch (QueryException $exception) {
-            if ($exception->getCode() == 23000) {
-                if (str_contains($exception->getMessage(), '1062 Duplicate entry')) {
-                    return $this->dataResponse('error', Response::HTTP_BAD_REQUEST, __('msg.duplicate_entry', ['modelName' => $modelName]));
-                }
+            if ($request->hasFile('attachment')) {
+                $attachmentPath = $request->file('attachment')->store($path);
+                $filepath = 'storage/' . substr($attachmentPath, 7);
+                $record->attachment = $filepath;
             }
-            return $this->dataResponse('error', Response::HTTP_BAD_REQUEST, $exception->getMessage());
+            $record->save();
+            return $this->dataResponse('success', 201, $modelName . ' ' . __('msg.create_success'), $record);
+        } catch (Exception $exception) {
+            return $this->dataResponse('error', 400, $exception /* __('msg.create_failed') */);
         }
     }
     public function updateRecordById($model, $request, $rules, $modelName, $id)
@@ -34,13 +35,12 @@ trait CrudOperationsTrait
             $record = new $model();
             $record = $model::find($id);
             if ($record) {
-                $fields['updated_by_id'] = $fields['created_by_id'];
                 $record->update($fields);
-                return $this->dataResponse('success', Response::HTTP_OK, __('msg.update_success'), $record);
+                return $this->dataResponse('success', 201, $modelName . ' ' . __('msg.update_success'), $record);
             }
-            return $this->dataResponse('error', Response::HTTP_OK, __('msg.update_failed'));
+            return $this->dataResponse('error', 200, $modelName . ' ' . __('msg.update_failed'));
         } catch (Exception $exception) {
-            return $this->dataResponse('error', Response::HTTP_BAD_REQUEST, $exception->getMessage());
+            return $this->dataResponse('error', 400, $exception->getMessage());
         }
     }
     public function readPaginatedRecord($model, $request, $searchableFields, $modelName)
@@ -70,107 +70,162 @@ trait CrudOperationsTrait
             if (isset($request['is_pinned'])) {
                 $query->where('is_pinned', $request['is_pinned']);
             }
-            $dataList = $query->limit($display)->offset($offset)->get();
+            // $dataList = $query->limit($display)->offset($offset)->get();
+            $dataList = $query->get();
             $totalPage = max(ceil($query->count() / $display), 1);
             $reconstructedList = [];
-            foreach ($dataList as $key => $value) {
-                $data = $model::findOrFail($value->id);
-                $response = $data->toArray();
-                $response['created_by'] = $data->createdBy->first_name . ' ' . $data->createdBy->middle_name . ' ' . $data->createdBy->last_name;
-                if (isset($data->updated_by_id)) {
-                    $response['updated_by'] = $data->updatedBy->first_name . ' ' . $data->updatedBy->middle_name . ' ' . $data->updatedBy->last_name;
-                }
-                $reconstructedList[] = $response;
-            }
+            /*  foreach ($dataList as $key => $value) {
+                 $data = $model::findOrFail($value->id);
+                 $response = $data->toArray();
+                 $response['created_by_id'] = $data->createdBy->first_name . ' ' . $data->createdBy->middle_name . ' ' . $data->createdBy->last_name;
+                 if (isset($data->updated_by_id)) {
+                     $response['updated_by_id'] = $data->updatedBy->first_name . ' ' . $data->updatedBy->middle_name . ' ' . $data->updatedBy->last_name;
+                 }
+                 $reconstructedList[] = $response;
+             } */
             $response = [
                 'total_page' => $totalPage,
-                'data' => $reconstructedList,
+                'data' => $dataList,
             ];
             if ($dataList->isNotEmpty()) {
                 return $this->dataResponse('success', 200, __('msg.record_found'), $response);
             }
-            return $this->dataResponse('error', 404, __('msg.record_not_found'));
+            return $this->dataResponse('error', 200, $modelName . ' ' . __('msg.record_not_found'));
         } catch (Exception $exception) {
-            return $this->dataResponse('error', Response::HTTP_BAD_REQUEST, $exception->getMessage());
+            return $this->dataResponse('error', 400, $exception->getMessage());
         }
     }
-    public function readRecord($model, $modelName)
+    public function readRecord($model, $modelName, $withField = null)
     {
         try {
-            $dataList = $model::get();
-            $reconstructedList = [];
-            foreach ($dataList as $key => $value) {
-                $data = $model::findOrFail($value->id);
-                $response = $data->toArray();
-                $response['created_by'] = $data->createdBy->first_name . ' ' . $data->createdBy->middle_name . ' ' . $data->createdBy->last_name;
-                if (isset($data->updated_by_id)) {
-                    $response['updated_by'] = $data->updatedBy->first_name . ' ' . $data->updatedBy->middle_name . ' ' . $data->updatedBy->last_name;
-                }
+            $dataList = $model::query();
 
-                if (isset($data->internal_system_id)) {
-                    $response['internal_system_short_name'] = $data->internalSystem->short_name;
-                }
-
-                if (isset($data->module_id)) {
-                    $response['module'] = [
-                        'module_name' => $data->module->name,
-                        'internal_system_short_name' => $data->module->internalSystem->short_name
-                    ];
-                }
-
-                if (isset($data->sub_module_id)) {
-                    $collection = $data->subModule;
-                    $response['module'] = [
-                        'sub_module_name' => $collection->name,
-                        'module_name' => $collection->module->name,
-                        'internal_system_short_name' => $collection->module->internalSystem->short_name
-                    ];
-                    $response['module_permission'] = $data->modulePermission->permission_name;
-                }
-                $reconstructedList[] = $response;
+            if ($withField != null) {
+                $dataList = $dataList->with($withField);
             }
+
+            $dataList = $dataList->get();
             if ($dataList->isNotEmpty()) {
-                return $this->dataResponse('success', Response::HTTP_OK, __('msg.record_found'), $reconstructedList);
+                return $this->dataResponse('success', 200, __('msg.record_found'), $dataList);
             }
-            return $this->dataResponse('error', Response::HTTP_OK, __('msg.record_not_found'));
+            return $this->dataResponse('error', 200, $modelName . ' ' . __('msg.record_not_found'));
         } catch (Exception $exception) {
-            return $this->dataResponse('error', Response::HTTP_BAD_REQUEST, $exception->getMessage());
+            return $this->dataResponse('error', 400, $exception->getMessage());
         }
     }
-    public function readRecordById($model, $id, $modelName)
+    public function readRecordById($model, $id, $modelName, $withField = null)
     {
         try {
-            $data = $model::find($id);
-            if ($data) {
-                $response = $data->toArray();
-                $response['created_by'] = $data->createdBy->first_name . ' ' . $data->createdBy->middle_name . ' ' . $data->createdBy->last_name;
-                if (isset($data->updated_by_id)) {
-                    $response['updated_by'] = $data->updatedBy->first_name . ' ' . $data->updatedBy->middle_name . ' ' . $data->updatedBy->last_name;
-                }
+            $query = $model::query();
 
-                if (isset($data->internal_system_id)) {
-                    $response['internal_system'] = $data->internalSystem->short_name;
-                }
-                return $this->dataResponse('success', Response::HTTP_OK, __('msg.record_found'), $response);
+            if ($withField != null) {
+                $query = $query->with($withField);
             }
-            return $this->dataResponse('error', Response::HTTP_OK, __('msg.record_not_found'));
+
+            $data = $query->find($id);
+            if ($data) {
+                return $this->dataResponse('success', 200, __('msg.record_found'), $data);
+            }
+
+            return $this->dataResponse('error', 200, $modelName . ' ' . __('msg.record_not_found'));
         } catch (Exception $exception) {
-            return $this->dataResponse('error', Response::HTTP_BAD_REQUEST, $exception->getMessage());
+            return $this->dataResponse('error', 400, $exception->getMessage());
         }
     }
-    public function changeStatusRecordById($model, $id, $modelName)
+    public function readRecordByParentId($model, $modelName, $parentField, $id = null, $withField = null)
     {
+        try {
+            $query = $model::query();
+
+            if ($withField) {
+                $query->with($withField);
+            }
+
+            if ($id) {
+                $query->where($parentField, $id);
+            }
+            $data = $query->get();
+
+            if ($data->isNotEmpty()) {
+                return $this->dataResponse('success', 200, __('msg.record_found'), $data);
+            }
+
+            return $this->dataResponse('error', 200, $modelName . ' ' . __('msg.record_not_found'));
+        } catch (Exception $exception) {
+            return $this->dataResponse('error', 400, $exception->getMessage());
+        }
+    }
+
+    public function readCurrentRecord($model, $id, $whereFields, $withFields, $orderFields, $modelName, $triggerOr = false, $notNullFields = null)
+    {
+        try {
+            $data = $model::orderBy('id', 'ASC');
+            if ($whereFields) {
+                foreach ($whereFields as $field => $value) {
+                    if (is_array($value)) {
+                        if ($triggerOr) {
+                            $data->orWhere(function ($query) use ($field, $value) {
+                                foreach ($value as $whereValue) {
+                                    $query->orWhere($field, $whereValue);
+                                }
+                            });
+                        } else {
+                            $data->where(function ($query) use ($field, $value) {
+                                foreach ($value as $whereValue) {
+                                    $query->orWhere($field, $whereValue);
+                                }
+                            });
+                        }
+                    } else {
+                        $data->where($field, $value);
+                    }
+                }
+            }
+
+            if ($notNullFields) {
+                if ($triggerOr) {
+                    foreach ($notNullFields as $field) {
+                        $data->orWhereNotNull($field);
+                    }
+                } else {
+                    foreach ($notNullFields as $field) {
+                        $data->whereNotNull($field);
+                    }
+                }
+            }
+            if ($orderFields) {
+                foreach ($orderFields as $field => $value) {
+                    $data->orderBy($field, $value);
+                }
+            }
+            if ($withFields != null) {
+                $data->with($withFields);
+            }
+            $dataList = $data->get();
+            if ($dataList->isNotEmpty()) {
+                return $this->dataResponse('success', 200, __('msg.record_found'), $dataList);
+            }
+            return $this->dataResponse('error', 200, $modelName . ' ' . __('msg.record_not_found'));
+        } catch (Exception $exception) {
+            return $this->dataResponse('error', 400, $exception->getMessage());
+        }
+    }
+    public function changeStatusRecordById($model, $id, $modelName, $request)
+    {
+        $fields = $request->validate([
+            'created_by_id' => 'required',
+        ]);
         try {
             $data = $model::find($id);
             if ($data) {
                 $response = $data->toArray();
                 $response['status'] = !$response['status'];
                 $data->update($response);
-                return $this->dataResponse('success', Response::HTTP_OK, __('msg.record_found'), $response);
+                return $this->dataResponse('success', 200, __('msg.update_success'), $response);
             }
-            return $this->dataResponse('error', Response::HTTP_OK, __('msg.record_not_found'));
+            return $this->dataResponse('error', 200, $modelName . ' ' . __('msg.record_not_found'));
         } catch (Exception $exception) {
-            return $this->dataResponse('error', Response::HTTP_BAD_REQUEST, $exception->getMessage());
+            return $this->dataResponse('error', 400, $exception->getMessage());
         }
     }
     public function deleteRecordById($model, $id, $modelName)
@@ -178,47 +233,36 @@ trait CrudOperationsTrait
         try {
             $deletedRows = $model::destroy($id);
             if ($deletedRows) {
-                return $this->dataResponse('success', Response::HTTP_OK, __('msg.delete_success'));
+                return $this->dataResponse('success', 200, __('msg.delete_success'));
             }
-            return $this->dataResponse('error', Response::HTTP_OK, __('msg.record_not_found'));
-        } catch (QueryException $exception) {
-            if ($exception->getCode() == 23000) {
-                return $this->dataResponse('error', Response::HTTP_BAD_REQUEST, __('msg.delete_failed_fk_constraint', ['modelName' => $modelName]));
-            }
-            return $this->dataResponse('error', Response::HTTP_BAD_REQUEST, $exception->getMessage());
+            return $this->dataResponse('error', 200, $modelName . ' ' . __('msg.delete_failed'));
+        } catch (Exception $exception) {
+            return $this->dataResponse('error', 400, $exception->getMessage());
         }
     }
 
-    public function readDistinctRecord($model, $modelName, $dbData)
+    public function bulkUpload($model, $modelName, $request)
     {
         try {
-            $dataList = $model::distinct()->get($dbData);
-            $reconstructedList = [];
-            foreach ($dataList as $key => $value) {
-                $reconstructedList[] = $value;
+            DB::beginTransaction();
+            $bulkUploadData = json_decode($request['bulk_data'], true);
+            $createdById = $request['created_by_id'];
+
+            foreach ($bulkUploadData as $data) {
+                $record = new $model();
+                $record->fill($data);
+                $record->created_by_id = $createdById;
+                $record->save();
             }
-            if ($dataList->isNotEmpty()) {
-                return $this->dataResponse('success', Response::HTTP_OK, __('msg.record_found'), $reconstructedList);
-            }
-            return $this->dataResponse('error', Response::HTTP_NOT_FOUND, __('msg.record_not_found'));
+            DB::commit();
+            return $this->dataResponse('success', 201, $modelName . ' ' . __('msg.create_success'));
         } catch (Exception $exception) {
-            return $this->dataResponse('error', Response::HTTP_BAD_REQUEST, $exception->getMessage());
+            DB::rollback();
+            if ($exception instanceof \Illuminate\Database\QueryException && $exception->errorInfo[1] == 1364) {
+                preg_match("/Field '(.*?)' doesn't have a default value/", $exception->getMessage(), $matches);
+                return $this->dataResponse('error', 400, __('Field ":field" requires a default value.', ['field' => $matches[1] ?? 'unknown field']));
+            }
+            return $this->dataResponse('error', 400, $exception->getMessage());
         }
     }
 }
-
-/* 1044: Access denied for a user to a database.
-1045: Access denied for a user with respect to a password.
-1142: Permission denied for a specific table.
-1146: Table does not exist.
-1217: Cannot delete or update a parent row (foreign key constraint fails).
-1451: Cannot delete or update a parent row: a foreign key constraint fails.
-1452: Cannot add or update a child row: a foreign key constraint fails.
-2002: Cannot connect to the MySQL server.
-1049: Unknown database.
-1062: Duplicate entry for a key.
-1064: Syntax error in SQL statement.
-1364: Field doesn't have a default value.
-2003: Can’t connect to MySQL server.
-23000: Integrity constraint violation (generic code, often seen in Laravel for various constraint violations). */
-?>

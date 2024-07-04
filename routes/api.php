@@ -1,7 +1,4 @@
 <?php
-use App\Http\Controllers\Auth\CredentialController;
-use App\Http\Controllers\UserProfile\PersonalInformationController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -18,17 +15,13 @@ use Illuminate\Support\Facades\Route;
 // Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 //     return $request->user();
 // });
-Route::post('login', [CredentialController::class, 'onLogin']);
+Route::post('v1/login', [App\Http\Controllers\Auth\CredentialController::class, 'onLogin']);
 Route::group(['middleware' => ['auth:sanctum']], function () {
-    // User Management
-    Route::post('user/register', [PersonalInformationController::class, 'onRegister']);
-    Route::get('user/list', [PersonalInformationController::class, 'onGetUserAll']);
-    Route::get('user/list/{employee_id}', [PersonalInformationController::class, 'onGetUserById']);
-    Route::post('user/list/paginate', [PersonalInformationController::class, 'onGetUserPaginate']);
-    Route::post('user/list/{employee_id}/update', [PersonalInformationController::class, 'onUserUpdate']);
-    Route::post('user/list/{employee_id}/delete', [PersonalInformationController::class, 'onUserDelete']);
-    Route::post('user/list/{employee_id}/status', [PersonalInformationController::class, 'onUserChangeStatus']);
+    Route::post('v1/logout', [App\Http\Controllers\Auth\CredentialController::class, 'onLogout']);
 
-    // Logout
-    Route::post('logout', [CredentialController::class, 'onLogout']);
+    #region Inventory Title
+    Route::post('v1/inventory/title/create', [App\Http\Controllers\Inventory\InventoryTitleController::class, 'onCreate']);
+    Route::post('v1/inventory/title/update/{id}', [App\Http\Controllers\Inventory\InventoryTitleController::class, 'onUpdate']);
+    Route::get('v1/inventory/title/get/all', [App\Http\Controllers\Inventory\InventoryTitleController::class, 'onGetAll']);
+    #endregion
 });

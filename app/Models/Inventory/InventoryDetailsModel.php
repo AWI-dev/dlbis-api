@@ -14,11 +14,10 @@ class InventoryDetailsModel extends Model
         'updated_by_id',
         'created_by_id',
         'inventory_title_id',
-        'reference_code',
-        'item_name',
-        'item_code',
-        'other_text',
-        'remarks',
+        'war_pr',
+        'telephone_number',
+        'telecom_equipment',
+        'recovery_sn',
     ];
 
     public function inventoryTitle()

@@ -14,11 +14,10 @@ class InventoryDetailsController extends Controller
     {
         return [
             'inventory_title_id' => 'required|exists:inventory_titles,id',
-            'reference_code' => 'required|string',
-            'item_name' => 'required|string',
-            'item_code' => 'required|string',
-            'other_text' => 'required|string',
-            'remarks' => 'required|string',
+            'war_pr' => 'required|string',
+            'telephone_number' => 'required|string',
+            'telecom_equipment' => 'required|string',
+            'recovery_sn' => 'required|string',
             'created_by_id' => 'required|exists:credentials,employee_id'
         ];
     }
@@ -30,11 +29,10 @@ class InventoryDetailsController extends Controller
     {
         $rules = [
             'updated_by_id' => 'required|exists:credentials,employee_id',
-            'reference_code' => 'required|string',
-            'item_name' => 'required|string',
-            'item_code' => 'required|string',
-            'other_text' => 'required|string',
-            'remarks' => 'required|string',
+            'war_pr' => 'required|string',
+            'telephone_number' => 'required|string',
+            'telecom_equipment' => 'required|string',
+            'recovery_sn' => 'required|string',
         ];
         return $this->updateRecordById(InventoryDetailsModel::class, $request, $rules, 'Inventory Details', $id);
     }

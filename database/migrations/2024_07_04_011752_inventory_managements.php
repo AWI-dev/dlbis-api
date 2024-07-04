@@ -22,12 +22,10 @@ return new class extends Migration {
         Schema::create('inventory_details', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('inventory_title_id');
-            $table->text('reference_code');
-            $table->text('item_name');
-            $table->text('item_code');
-            $table->text('other_text');
-            $table->text('remarks');
-
+            $table->text('war_pr');
+            $table->text('telephone_number');
+            $table->text('telecom_equipment');
+            $table->text('recovery_sn');
             SchemaHelper::addCommonColumns($table);
 
             $table->foreign('inventory_title_id')->references('id')->on('inventory_titles')->onDelete('cascade');

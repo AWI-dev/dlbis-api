@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Auth\CredentialModel;
 use App\Models\Auth\EmployeeInformationModel;
+use App\Traits\ResponseTrait;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +15,7 @@ use DB;
 
 class CredentialController extends Controller
 {
+    use ResponseTrait;
     public function onLogin(Request $request)
     {
         $fields = $request->validate([
@@ -77,7 +79,8 @@ class CredentialController extends Controller
             'last_name' => 'required|string',
             'suffix' => 'nullable|string',
             'role' => 'required',
-            'company_email' => 'required|email|unique:credential_employee_informations,company_email'
+            'company_email' => 'required|email|unique:credential_employee_informations,company_email',
+            'created_by_id' => 'required'
         ]);
         try {
             DB::beginTransaction();

@@ -2,6 +2,7 @@
 
 namespace App\Models\Auth;
 
+use App\Models\CredentialModel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 

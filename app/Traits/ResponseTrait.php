@@ -15,4 +15,3 @@ trait ResponseTrait
         return response($response, $httpCode);
     }
 }
-?>

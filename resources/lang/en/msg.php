@@ -21,15 +21,17 @@ return [
     'otp_valid' => "The entered One-Time Password (OTP) is correct.",
     'otp_invalid' => "Incorrect One-Time Password (OTP) entered.",
     'bulk_upload_success' => "Bulk Successfully Uploaded",
-   
+
     'create_success' => "successfully uploaded.",
     'create_failed' => "failed to create.",
     'update_success' => "successfully updated.",
     'update_failed' => "failed to update.",
     'delete_success' => "successfully deleted.",
     'delete_failed' => "failed to delete .",
-    'record_found' => "Successfully retrived records.",
+    'record_found' => "Successfully retrieved records.",
     'record_not_found' => "No matching record found.",
+    'approve_success' => "successfully approved",
+    'disapprove_success' => "successfully disapproved",
 
     /* MSQL Error */
     'delete_failed_fk_constraint' => "The selected :modelName cannot be deleted because it is currently in used.",

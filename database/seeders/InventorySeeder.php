@@ -190,6 +190,16 @@ class InventorySeeder extends Seeder
                 'created_by_id' => '0000',
                 'updated_at' => now(),
             ],
+            [
+                'inventory_title_id' => 3,
+                'war_pr' => 'PR2024-1S5',
+                'telephone_number' => '6S78-901-2345',
+                'telecom_equipment' => 'FirewallS',
+                'recovery_sn' => 'SN678901245',
+                'created_at' => now(),
+                'created_by_id' => '0000',
+                'updated_at' => now(),
+            ],
         ];
 
         DB::table('inventory_details')->insert($details);

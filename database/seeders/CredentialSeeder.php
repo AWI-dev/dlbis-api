@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Auth\EmployeeInformationModel;
 use Illuminate\Database\Seeder;
-use App\Models\Auth\CredentialModel;
+use App\Models\CredentialModel;
 
 class CredentialSeeder extends Seeder
 {

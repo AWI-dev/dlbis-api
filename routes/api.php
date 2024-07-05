@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Route;
 //     return $request->user();
 // });
 Route::post('v1/login', [App\Http\Controllers\Auth\CredentialController::class, 'onLogin']);
+Route::get('v1/inventory/title/get/all', [App\Http\Controllers\Inventory\InventoryTitleController::class, 'onGetAll']);
+
 Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('v1/run-migrations-and-seed', function () {
         // Artisan::call('migrate', ["--force" => true]);
@@ -31,7 +33,6 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('v1/inventory/title/create', [App\Http\Controllers\Inventory\InventoryTitleController::class, 'onCreate']);
     Route::post('v1/inventory/title/update/{id}', [App\Http\Controllers\Inventory\InventoryTitleController::class, 'onUpdate']);
     Route::delete('v1/inventory/title/delete/{id}', [App\Http\Controllers\Inventory\InventoryTitleController::class, 'onDelete']);
-    Route::get('v1/inventory/title/get/all', [App\Http\Controllers\Inventory\InventoryTitleController::class, 'onGetAll']);
     #endregion
 
     #region Inventory Title
